@@ -5,7 +5,7 @@ namespace JustGo.Flights.OperationsConsole.Data;
 
 public class FlightsDbContext(DbContextOptions<FlightsDbContext> options) : DbContext(options)
 {
-    public const string Schema = "opeations_console";
+    public const string Schema = "operations_console";
     public DbSet<Flight> Flights => Set<Flight>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
