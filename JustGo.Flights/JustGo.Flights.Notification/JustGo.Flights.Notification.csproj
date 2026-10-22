@@ -13,4 +13,8 @@
     <PackageReference Include="Rebus.RabbitMq" Version="10.1.1" />
     <PackageReference Include="Rebus.ServiceProvider" Version="10.7.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JustGo.Flights.Contracts\JustGo.Flights.Contracts.csproj" />
+  </ItemGroup>
 </Project>

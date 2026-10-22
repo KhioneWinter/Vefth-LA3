@@ -1,0 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS operations_console;
+CREATE SCHEMA IF NOT EXISTS checkin_boarding;
+CREATE SCHEMA IF NOT EXISTS ground_operations;
+CREATE SCHEMA IF NOT EXISTS baggage_handling;
+CREATE SCHEMA IF NOT EXISTS notification;
