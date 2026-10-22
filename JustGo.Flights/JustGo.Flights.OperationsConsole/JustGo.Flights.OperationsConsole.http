@@ -1,0 +1,6 @@
+@JustGo.Flights.OperationsConsole_HostAddress = http://localhost:5249
+
+GET {{JustGo.Flights.OperationsConsole_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

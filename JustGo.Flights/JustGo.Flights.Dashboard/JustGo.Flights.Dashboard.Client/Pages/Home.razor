@@ -1,0 +1,87 @@
+@page "/"
+@rendermode InteractiveWebAssembly
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
+
+<PageTitle>Live Events</PageTitle>
+
+<h1>Live flight events</h1>
+
+<p>
+    Status:
+    <span class="badge @(connected ? "bg-success" : "bg-secondary")">@(connected ? "Connected" : "Connecting…")</span>
+</p>
+
+@if (events.Count == 0)
+{
+    <p><em>Waiting for events. Trigger one through the Operations Console API.</em></p>
+}
+else
+{
+    <table class="table table-sm">
+        <thead>
+        <tr>
+            <th>Received</th>
+            <th>Event</th>
+            <th>Flight</th>
+            <th>Details</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var e in events)
+        {
+            <tr>
+                <td>@e.ReceivedAt.LocalDateTime.ToString("HH:mm:ss")</td>
+                <td>@e.EventType</td>
+                <td><code>@e.FlightId</code></td>
+                <td>@e.Summary</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private const int MaxEvents = 200;
+
+    private readonly List<DashboardEvent> events = [];
+    private HubConnection? hubConnection;
+    private bool connected;
+
+    // Connect after the first render so this only runs in the browser, not during server prerendering
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/dashboardhub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<DashboardEvent>("EventReceived", e =>
+        {
+            events.Insert(0, e);
+            if (events.Count > MaxEvents) events.RemoveAt(events.Count - 1);
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.Reconnecting += _ => SetConnected(false);
+        hubConnection.Reconnected += _ => SetConnected(true);
+        hubConnection.Closed += _ => SetConnected(false);
+
+        await hubConnection.StartAsync();
+        await SetConnected(true);
+    }
+
+    private Task SetConnected(bool value)
+    {
+        connected = value;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null) await hubConnection.DisposeAsync();
+    }
+}
