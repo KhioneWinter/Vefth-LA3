@@ -1,0 +1,130 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  notification:
+    build:
+      context: ./JustGo.Flights
+      dockerfile: JustGo.Flights.Notification/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__FlightsDb: ${FLIGHTSDB_CONNECTION}
+      ConnectionStrings__RabbitMq: ${RABBITMQ_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  checkinboarding:
+    build:
+      context: ./JustGo.Flights
+      dockerfile: JustGo.Flights.CheckInBoarding/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__FlightsDb: ${FLIGHTSDB_CONNECTION}
+      ConnectionStrings__RabbitMq: ${RABBITMQ_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  groundoperations:
+    build:
+      context: ./JustGo.Flights
+      dockerfile: JustGo.Flights.GroundOperations/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__FlightsDb: ${FLIGHTSDB_CONNECTION}
+      ConnectionStrings__RabbitMq: ${RABBITMQ_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+
+  baggagehandling:
+    build:
+      context: ./JustGo.Flights
+      dockerfile: JustGo.Flights.BaggageHandling/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__FlightsDb: ${FLIGHTSDB_CONNECTION}
+      ConnectionStrings__RabbitMq: ${RABBITMQ_CONNECTION}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  operationsconsole:
+    build:
+      context: ./JustGo.Flights
+      dockerfile: JustGo.Flights.OperationsConsole/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__FlightsDb: ${FLIGHTSDB_CONNECTION}
+      ConnectionStrings__RabbitMq: ${RABBITMQ_CONNECTION}
+    ports:
+        - "5249:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  dashboard:
+    build:
+      context: ./JustGo.Flights
+      dockerfile: JustGo.Flights.Dashboard/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__FlightsDb: ${FLIGHTSDB_CONNECTION}
+      ConnectionStrings__RabbitMq: ${RABBITMQ_CONNECTION}
+    ports:
+        - "5117:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+
+volumes:
+  postgres-data:
